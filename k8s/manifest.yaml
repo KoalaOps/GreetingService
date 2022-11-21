@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: koala-demo
+  labels:
+    name: koala-demo
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: greeting-service
+  namespace: koala-demo
+spec:
+  selector:
+    matchLabels:
+      app: greeting-service
+  template:
+    metadata:
+      labels:
+        app: greeting-service
+    spec:
+      serviceAccountName: default
+      terminationGracePeriodSeconds: 5
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+      - name: server
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - all
+          privileged: false
+          readOnlyRootFilesystem: true
+        image: us-central1-docker.pkg.dev/koala-369310/koala-repo/greetingservice:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: PORT
+          value: "8080"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: greetingservice
+  namespace: koala-demo
+spec:
+  type: ClusterIP
+  selector:
+    app: greetingservice
+  ports:
+  - name: grpc
+    port: 5000
+    targetPort: 8080
